@@ -19,10 +19,26 @@
     }
 
     $(document).ready(function () {
-        var url, ws, stompClient;
+        var url, ws, stompClient, stompClientOverWs;
 
-        //url = "ws://localhost:8080/websocket/greetings";
-        url = "wss://localhost:8443/websocket/greetings";
+        //url = "ws://localhost:8080/websocket-test/greetings";
+        url = "wss://localhost:8443/websocket-test/greetings";
+
+        stompClient = Stomp.client(url);
+        var connectCallback = function() {
+            stompClient.subscribe("/topic/greetings", onGreeting);
+            stompClient.debug = function (str) {
+                $("#debug").append(str + "\n");
+            };
+           console.log("STOMP client connected!");
+        };
+        var errorCallback = function(error) {
+            console.error("STOMP : " + error.headers.message);
+            stompClient.disconnect();
+        };
+        stompClient.connect(null, null, connectCallback, errorCallback);
+
+        // --------------------------------------------------------------------
 
         ws = new WebSocket(url);
         ws.addEventListener('open', function(){
@@ -32,19 +48,19 @@
             console.log("Connection established, handle with function");
         };
 
-        stompClient = Stomp.over(ws);
+        stompClientOverWs = Stomp.over(ws);
 
-        stompClient.connect({}, {},
+        stompClientOverWs.connect({}, {},
                 function () {
-                    stompClient.subscribe("/topic/greetings", onGreeting);
-                    stompClient.debug = function (str) {
+                    stompClientOverWs.subscribe("/topic/greetings", onGreeting);
+                    stompClientOverWs.debug = function (str) {
                         $("#debug").append(str + "\n");
                     };
                     console.log("STOMP over WebSocket connected.");
                 },
                 function (err) {
-                    console.log(JSON.stringify(err));
-                    stompClient.disconnect();
+                    console.log("STOMP over WS: " + JSON.stringify(err));
+                    stompClientOverWs.disconnect();
                 }
         );
     });
